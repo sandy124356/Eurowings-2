@@ -156,6 +156,11 @@ object Filter_columns {
  .withColumn("longitude_formatted",$"longitude".cast("Double"))
 
 
+    .withColumn("last_scraped_date",to_date(unix_timestamp(col("last_scraped"),"MM/dd/yyyy").cast("timestamp")))
+      .withColumn("host_since_date",to_date(unix_timestamp(col("host_since"),"MM/dd/yyyy").cast("timestamp")))
+      .withColumn("calendar_last_scraped_date",to_date(unix_timestamp(col("calendar_last_scraped"),"MM/dd/yyyy").cast("timestamp")))
+      .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
+      .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
 
 /*
    :boolean columns
@@ -172,7 +177,14 @@ object Filter_columns {
 
 
     /*
-  date fields
+  date fields:
+
+  last_scraped
+  host_since
+  calendar_last_scraped
+  first_review
+  last_review
+
   */
 
 
