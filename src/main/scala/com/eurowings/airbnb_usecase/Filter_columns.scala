@@ -7,6 +7,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.functions.column
 import org.apache.spark.sql.functions._
+import java.sql.Date
 object Filter_columns {
 
   //def format_currency_data1: String => Double = _.trim.replaceAll("[ $,{,% ]", "").toDouble
@@ -31,6 +32,8 @@ object Filter_columns {
       input.trim.replaceAll("[ $,{,% ]", "").toInt
     }
   }
+
+
 
   //def format_decimal_data1: String => Int = _.toInt
 //  def format_decimal_data_udf1 = udf(format_decimal_data1)
@@ -61,6 +64,7 @@ object Filter_columns {
     val spark= new SparkSession.Builder().master("local[*]").appName("Eurowings_dataEngine")getOrCreate()
 
     import spark.implicits._
+    import java.sql.Date
 
     val original_df= spark.read
       .option("wholeFile", true)
@@ -162,6 +166,8 @@ object Filter_columns {
       .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
 
+
+
 /*
    :boolean columns
     host_has_profile_pic
@@ -188,9 +194,9 @@ object Filter_columns {
   */
 
 
-    formatted_df2.select($"price_formatted").show(100)
+    //formatted_df2.select($"price_formatted").show(100)
 
-    formatted_df2.groupBy("price_formatted").sum("price_formatted").show(100)
+    //formatted_df2.groupBy("price_formatted").sum("price_formatted").show(100)
 
 
 
@@ -204,7 +210,217 @@ object Filter_columns {
     println("now back after schema step3")
     //original_df.schema.fieldNames.foreach(println)
     //original_df.schema.foreach(println)
-    formatted_df2.show(10)
+    //formatted_df2.show(10)
+
+    val AllcolumnNameSeq =
+      Seq("id_formatted",
+        "listing_url",
+        "scrape_id",
+        "last_scraped_date",
+        "name",
+        "summary",
+        "space",
+        "description",
+        "experiences_offered",
+        "neighborhood_overview",
+        "notes",
+        "transit",
+        "access",
+        "interaction",
+        "house_rules",
+        "thumbnail_url",
+        "medium_url",
+        "picture_url",
+        "xl_picture_url",
+        "host_id_formatted",
+        "host_url",
+        "host_name",
+        "host_since_date",
+        "host_location",
+        "host_about",
+        "host_response_time",
+        "host_response_rate_formatted",
+        "host_acceptance_rate_formatted",
+        "host_is_superhost",
+        "host_thumbnail_url",
+        "host_picture_url",
+        "host_neighbourhood",
+        "host_listings_count_formatted",
+        "host_total_listings_count_formatted",
+        "host_verifications",
+        "host_has_profile_pic",
+        "host_identity_verified",
+        "street",
+        "neighbourhood",
+        "neighbourhood_cleansed",
+        "neighbourhood_group_cleansed",
+        "city",
+        "state",
+        "zipcode",
+        "market",
+        "smart_location",
+        "country_code",
+        "country",
+        "latitude_formatted",
+        "longitude_formatted",
+        "is_location_exact",
+        "property_type",
+        "room_type",
+        "accommodates_formatted",
+        "bathrooms_formatted",
+        "bedrooms_formatted",
+        "beds",
+        "bed_type",
+        "amenities",
+        "square_feet_formatted",
+        "price_formatted",
+        "weekly_price_formatted",
+        "monthly_price_formatted",
+        "security_deposit_formatted",
+        "cleaning_fee_formatted",
+        "guests_included_formatted",
+        "extra_people_formatted",
+        "minimum_nights_formatted",
+        "maximum_nights_formatted",
+        "calendar_updated",
+        "has_availability",
+        "availability_30_formatted",
+        "availability_60_formatted",
+        "availability_90_formatted",
+        "availability_365_formatted",
+        "calendar_last_scraped_date",
+        "number_of_reviews_formatted",
+        "first_review_date",
+        "last_review_date",
+        "review_scores_rating_formatted",
+        "review_scores_accuracy_formatted",
+        "review_scores_cleanliness_formatted",
+        "review_scores_checkin_formatted",
+        "review_scores_communication_formatted",
+        "review_scores_location_formatted",
+        "review_scores_value_formatted",
+        "requires_license",
+        "license",
+        "jurisdiction_names",
+        "instant_bookable",
+        "is_business_travel_ready",
+        "cancellation_policy",
+        "require_guest_profile_picture",
+        "require_guest_phone_verification",
+        "calculated_host_listings_count_formatted",
+        "reviews_per_month_formatted"
+    )
+    //val final_df=formatted_df2.select(col("abc"))
+    val final_df=formatted_df2.select(AllcolumnNameSeq.map(x=>col(x)):_* )
+
+    final_df.show(100)
+
+    final_df.select("id_formatted").show(100)
+
+  // case class sss(a:Double)
+
+    case class airbnb_data(		id_formatted:Int,
+                               listing_url:String,
+                               scrape_id:String,
+                               last_scraped_date:String,
+                               name:String,
+                               summary:String,
+                               space:String,
+                               description:String,
+                               experiences_offered:String,
+                               neighborhood_overview:String,
+                               notes:String,
+                               transit:String,
+                               access:String,
+                               interaction:String,
+                               house_rules:String,
+                               thumbnail_url:String,
+                               medium_url:String,
+                               picture_url:String,
+                               xl_picture_url:String,
+                               host_id_formatted:Int,
+                               host_url:String,
+                               host_name:String,
+                               host_since_date:String,
+                               host_location:String,
+                               host_about:String,
+                               host_response_time:String,
+                               host_response_rate_formatted:Int,
+                               host_acceptance_rate_formatted:Int,
+                               host_is_superhost:String,
+                               host_thumbnail_url:String,
+                               host_picture_url:String,
+                               host_neighbourhood:String,
+                               host_listings_count_formatted:Int,
+                               host_total_listings_count_formatted:Int,
+                               host_verifications:String,
+                               host_has_profile_pic:String,
+                               host_identity_verified:String,
+                               street:String,
+                               neighbourhood:String,
+                               neighbourhood_cleansed:String,
+                               neighbourhood_group_cleansed:String,
+                               city:String,
+                               state:String,
+                               zipcode:String,
+                               market:String,
+                               smart_location:String,
+                               country_code:String,
+                               country:String,
+                               latitude_formatted:Double,
+                               longitude_formatted:Double,
+                               is_location_exact:String,
+                               property_type:String,
+                               room_type:String,
+                               accommodates_formatted:Int,
+                               bathrooms_formatted:Double,
+                               bedrooms_formatted:Int,
+                               beds:Int,
+                               bed_type:String,
+                               amenities:String,
+                               square_feet_formatted:Int,
+                               price_formatted:Double,
+                               weekly_price_formatted:Double,
+                               monthly_price_formatted:Double,
+                               security_deposit_formatted:Double,
+                               cleaning_fee_formatted:Double,
+                               guests_included_formatted:Int,
+                               extra_people_formatted:Double,
+                               minimum_nights_formatted:Int,
+                               maximum_nights_formatted:Int,
+                               calendar_updated:String,
+                               has_availability:String,
+                               availability_30_formatted:Int,
+                               availability_60_formatted:Int,
+                               availability_90_formatted:Int,
+                               availability_365_formatted:Int,
+                               calendar_last_scraped_date:String,
+                               number_of_reviews_formatted:Int,
+                               first_review_date:String,
+                               last_review_date:String,
+                               review_scores_rating_formatted:Int,
+                               review_scores_accuracy_formatted:Int,
+                               review_scores_cleanliness_formatted:Int,
+                               review_scores_checkin_formatted:Int,
+                               review_scores_communication_formatted:Int,
+                               review_scores_location_formatted:Int,
+                               review_scores_value_formatted:Int,
+                               requires_license:String,
+                               license:String,
+                               jurisdiction_names:String,
+                               instant_bookable:String,
+                               is_business_travel_ready:String,
+                               cancellation_policy:String,
+                               require_guest_profile_picture:String,
+                               require_guest_phone_verification:String,
+                               calculated_host_listings_count_formatted:Int,
+                               reviews_per_month_formatted:Double)
+
+    println("num of columns are :",final_df.columns.size)
+
+    //val final_dataset =final_df.as[airbnb_data]
+
+    //final_dataset.select("host_acceptance_rate_formatted").show(100)
 
     spark.stop()
   }
