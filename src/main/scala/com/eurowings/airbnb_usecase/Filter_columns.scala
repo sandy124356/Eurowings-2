@@ -9,14 +9,33 @@ import org.apache.spark.sql.functions.column
 import org.apache.spark.sql.functions._
 object Filter_columns {
 
-  def format_currency_data1: String => Double = _.trim.replaceAll("[ $,{,% ]", "").toDouble
-  def format_currency_data_udf1 = udf(format_currency_data1)
+  //def format_currency_data1: String => Double = _.trim.replaceAll("[ $,{,% ]", "").toDouble
+  //def format_currency_data_udf1 = udf(format_currency_data1)
 
-  def format_numeric_data1: String => Int = _.trim.replaceAll("[ $,{,% ]", "").toInt
-  def format_numeric_data_udf1 = udf(format_numeric_data1)
+  //def format_numeric_data1: String => Int = _.trim.replaceAll("[ $,{,% ]", "").toInt
+  //def format_numeric_data_udf1 = udf(format_numeric_data1)
 
-  def format_decimal_data1: String => Int = _.toInt
-  def format_decimal_data_udf1 = udf(format_decimal_data1)
+
+  def format_currency_data(input: String): Double = {
+    if(input.trim().isEmpty ){
+      return 0.00
+    }else{
+      input.trim.replaceAll("[ $,{,% ]", "").toDouble
+    }
+  }
+
+  def format_numeric_data(input: String): Int = {
+    if(input.trim().isEmpty ){
+      return 0
+    }else{
+      input.trim.replaceAll("[ $,{,% ]", "").toInt
+    }
+  }
+
+  //def format_decimal_data1: String => Int = _.toInt
+//  def format_decimal_data_udf1 = udf(format_decimal_data1)
+  val format_currency_data_udf1 = udf((input : String) => format_currency_data(input))
+  val format_numeric_data_udf1 = udf((input : String) => format_numeric_data(input))
 /*
   def format_currency_data2 (S: String) :Double ={
     try {
@@ -90,48 +109,51 @@ object Filter_columns {
       println("now back after schema")
 
     val formatted_df2=original_df
-      .withColumn("price_formatted", format_currency_data_udf1($"price") )
-      .withColumn("weekly_price_formatted",format_currency_data_udf1($"weekly_price"))
-      .withColumn("monthly_price_formatted",format_currency_data_udf1($"monthly_price"))
-      .withColumn("security_deposit_formatted",format_currency_data_udf1($"security_deposit"))
-      .withColumn("cleaning_fee_formatted",format_currency_data_udf1($"cleaning_fee"))
-      .withColumn("extra_people_formatted",format_currency_data_udf1($"extra_people"))
-      .withColumn("bathrooms",format_currency_data_udf1($"bathrooms"))
-      .withColumn("reviews_per_month",format_currency_data_udf1($"reviews_per_month"))
+     // .withColumn("price_formatted", format_currency_data_udf1( $"price"))
+
+      .withColumn("price_formatted", format_currency_data_udf1(when ($"price".isNull,0.00).otherwise($"price")))
+
+      .withColumn("weekly_price_formatted",format_currency_data_udf1(when ($"weekly_price".isNull,0.00).otherwise($"weekly_price")))
+      .withColumn("monthly_price_formatted",format_currency_data_udf1(when ($"monthly_price".isNull,0.00).otherwise($"monthly_price")))
+      .withColumn("security_deposit_formatted",format_currency_data_udf1(when ($"security_deposit".isNull,0.00).otherwise($"security_deposit")))
+      .withColumn("cleaning_fee_formatted",format_currency_data_udf1(when ($"cleaning_fee".isNull,0.00).otherwise($"cleaning_fee")))
+      .withColumn("extra_people_formatted",format_currency_data_udf1(when ($"extra_people".isNull,0.00).otherwise($"extra_people")))
+      .withColumn("bathrooms_formatted",format_currency_data_udf1(when ($"bathrooms".isNull,0.00).otherwise($"bathrooms")))
+      .withColumn("reviews_per_month_formatted",format_currency_data_udf1(when ($"reviews_per_month".isNull,0.00).otherwise($"reviews_per_month")))
 
 
-      .withColumn("id_formatted",format_numeric_data_udf1($"id"))
-      .withColumn("host_id_formatted",format_numeric_data_udf1($"host_id"))
-     // .withColumn("host_response_rate",format_numeric_data_udf1($"host_response_rate"))
-     //.withColumn("host_acceptance_rate",format_numeric_data_udf1($"host_acceptance_rate"))
-      .withColumn("host_listings_count",format_numeric_data_udf1($"host_listings_count"))
-      .withColumn("host_total_listings_count",format_numeric_data_udf1($"host_total_listings_count"))
-      .withColumn("accommodates",format_numeric_data_udf1($"accommodates"))
+      .withColumn("id_formatted",format_numeric_data_udf1(when ($"id".isNull,0).otherwise($"id")))
+      .withColumn("host_id_formatted",format_numeric_data_udf1(when ($"host_id".isNull,0).otherwise($"host_id")))
+      .withColumn("host_response_rate_formatted",format_numeric_data_udf1(when ($"host_response_rate".isNull,0).otherwise($"host_response_rate")))
+      .withColumn("host_acceptance_rate_formatted",format_numeric_data_udf1(when ($"host_acceptance_rate".isNull,0).otherwise($"host_acceptance_rate")))
+      .withColumn("host_listings_count_formatted",format_numeric_data_udf1(when ($"host_listings_count".isNull,0).otherwise($"host_listings_count")))
+      .withColumn("host_total_listings_count_formatted",format_numeric_data_udf1(when ($"host_total_listings_count".isNull,0).otherwise($"host_total_listings_count")))
+      .withColumn("accommodates_formatted",format_numeric_data_udf1(when ($"accommodates".isNull,0).otherwise($"accommodates")))
 
 
-.withColumn("bedrooms",format_numeric_data_udf1($"bedrooms"))
-.withColumn("beds",format_numeric_data_udf1($"beds"))
-.withColumn("square_feet",format_numeric_data_udf1($"square_feet"))
-.withColumn("guests_included",format_numeric_data_udf1($"guests_included"))
-.withColumn("minimum_nights",format_numeric_data_udf1($"minimum_nights"))
-.withColumn("maximum_nights",format_numeric_data_udf1($"maximum_nights"))
-.withColumn("availability_30",format_numeric_data_udf1($"availability_30"))
-.withColumn("availability_60",format_numeric_data_udf1($"availability_60"))
-.withColumn("availability_90",format_numeric_data_udf1($"availability_90"))
-.withColumn("availability_365",format_numeric_data_udf1($"availability_365"))
-.withColumn("number_of_reviews",format_numeric_data_udf1($"number_of_reviews"))
-.withColumn("review_scores_rating",format_numeric_data_udf1($"review_scores_rating"))
-.withColumn("review_scores_accuracy",format_numeric_data_udf1($"review_scores_accuracy"))
-.withColumn("review_scores_cleanliness",format_numeric_data_udf1($"review_scores_cleanliness"))
-.withColumn("review_scores_checkin",format_numeric_data_udf1($"review_scores_checkin"))
-.withColumn("review_scores_communication",format_numeric_data_udf1($"review_scores_communication"))
-.withColumn("review_scores_location",format_numeric_data_udf1($"review_scores_location"))
-.withColumn("review_scores_value",format_numeric_data_udf1($"review_scores_value"))
-.withColumn("calculated_host_listings_count",format_numeric_data_udf1($"calculated_host_listings_count"))
+      .withColumn("bedrooms_formatted",format_numeric_data_udf1(when ($"bedrooms".isNull,0).otherwise($"bedrooms")))
+      .withColumn("beds_formatted",format_numeric_data_udf1(when ($"beds".isNull,0).otherwise($"beds")))
+      .withColumn("square_feet_formatted",format_numeric_data_udf1(when ($"square_feet".isNull,0).otherwise($"square_feet")))
+      .withColumn("guests_included_formatted",format_numeric_data_udf1(when ($"guests_included".isNull,0).otherwise($"guests_included")))
+      .withColumn("minimum_nights_formatted",format_numeric_data_udf1(when ($"minimum_nights".isNull,0).otherwise($"minimum_nights")))
+      .withColumn("maximum_nights_formatted",format_numeric_data_udf1(when ($"maximum_nights".isNull,0).otherwise($"maximum_nights")))
+      .withColumn("availability_30_formatted",format_numeric_data_udf1(when ($"availability_30".isNull,0).otherwise($"availability_30")))
+      .withColumn("availability_60_formatted",format_numeric_data_udf1(when ($"availability_60".isNull,0).otherwise($"availability_60")))
+      .withColumn("availability_90_formatted",format_numeric_data_udf1(when ($"availability_90".isNull,0).otherwise($"availability_90")))
+      .withColumn("availability_365_formatted",format_numeric_data_udf1(when ($"availability_365".isNull,0).otherwise($"availability_365")))
+      .withColumn("number_of_reviews_formatted",format_numeric_data_udf1(when ($"number_of_reviews".isNull,0).otherwise($"number_of_reviews")))
+      .withColumn("review_scores_rating_formatted",format_numeric_data_udf1(when ($"review_scores_rating".isNull,0).otherwise($"review_scores_rating")))
+      .withColumn("review_scores_accuracy_formatted",format_numeric_data_udf1(when ($"review_scores_accuracy".isNull,0).otherwise($"review_scores_accuracy")))
+      .withColumn("review_scores_cleanliness_formatted",format_numeric_data_udf1(when ($"review_scores_cleanliness".isNull,0).otherwise($"review_scores_cleanliness")))
+      .withColumn("review_scores_checkin_formatted",format_numeric_data_udf1(when ($"review_scores_checkin".isNull,0).otherwise($"review_scores_checkin")))
+      .withColumn("review_scores_communication_formatted",format_numeric_data_udf1(when ($"review_scores_communication".isNull,0).otherwise($"review_scores_communication")))
+      .withColumn("review_scores_location_formatted",format_numeric_data_udf1(when ($"review_scores_location".isNull,0).otherwise($"review_scores_location")))
+      .withColumn("review_scores_value_formatted",format_numeric_data_udf1(when ($"review_scores_value".isNull,0).otherwise($"review_scores_value")))
+      .withColumn("calculated_host_listings_count_formatted",format_numeric_data_udf1(when ($"calculated_host_listings_count".isNull,0).otherwise($"calculated_host_listings_count")))
 
 
- //.withColumn("latitude_formatted",$"latitude".cast("decimal(8,2"))
- //.withColumn("longitude_formatted",$"longitude".cast("decimal(9,2"))
+ .withColumn("latitude_formatted",$"latitude".cast("Double"))
+ .withColumn("longitude_formatted",$"longitude".cast("Double"))
 
 
 
