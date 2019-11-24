@@ -32,7 +32,7 @@ object Filter_columns {
     }
   }
 
-  def format_boolean_data(input: String): Char = {
+  def format_boolean_data_original(input: String): Char = {
     if(input.trim().isEmpty ){
       return ' '
     }else{
@@ -49,21 +49,34 @@ object Filter_columns {
     }
   }
 
-  def format_verifications(input: String): String = {
+  def format_host_verifications(input: String): String = {
     if(input.isEmpty ){
       return null
     }else{
-      input.replace("[","").replace("]","").replace("'","")
+      //input.replace("[","").replace("]","").replace("'","")
+      input.replaceAll("[\\[\\]\\']","")
     }
+  }
+
+
+  def format_boolean_data(input: String): Boolean = {
+
+      if (input.trim().toLowerCase() == "t")
+          return true
+      else if  (input.trim().toLowerCase() == "f")
+          return false
+      else
+        return false
+
   }
 
   //def format_decimal_data1: String => Int = _.toInt
 //  def format_decimal_data_udf1 = udf(format_decimal_data1)
   val format_currency_data_udf1 = udf((input : String) => format_currency_data(input))
   val format_numeric_data_udf1 = udf((input : String) => format_numeric_data(input))
- // val format_boolean_data_udf1 = udf((input : String) => format_boolean_data(input))
+  val format_boolean_data_udf1 = udf((input : String) => format_boolean_data(input))
   val format_amenities_data_udf1=udf((input:String)=> format_amenities(input))
-  val format_host_verifications_data_udf1=udf((input:String)=>format_verifications(input))
+  val format_host_verifications_data_udf1=udf((input:String)=>format_host_verifications(input))
 
 /*
   def format_currency_data2 (S: String) :Double ={
@@ -191,21 +204,21 @@ object Filter_columns {
       .withColumn("calendar_last_scraped_date",to_date(unix_timestamp(col("calendar_last_scraped"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
-
+//list types
         .withColumn("amenities_formatted",format_amenities_data_udf1($"amenities") )
         .withColumn("host_verifications_formatted", format_host_verifications_data_udf1($"host_verifications"))
         .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1($"jurisdiction_names"))
 
      //booleantypes
-     // .withColumn("host_has_profile_pic_b",format_boolean_data_udf1($"host_has_profile_pic"))
-     // .withColumn("host_identity_verified_b",format_boolean_data_udf1($"host_identity_verified"))
-      //.withColumn("is_location_exact_b",format_boolean_data_udf1($"is_location_exact"))
-      //.withColumn("has_availability_b",format_boolean_data_udf1($"has_availability"))
-      //.withColumn("requires_license_b",format_boolean_data_udf1($"requires_license"))
-      //.withColumn("instant_bookable_b",format_boolean_data_udf1($"instant_bookable"))
-      //.withColumn("is_business_travel_ready_b",format_boolean_data_udf1($"is_business_travel_ready"))
-      //.withColumn("require_guest_profile_picture_b",format_boolean_data_udf1($"require_guest_profile_picture"))
-      //.withColumn("require_guest_phone_verification_b",format_boolean_data_udf1($"require_guest_phone_verification"))
+       .withColumn("host_has_profile_pic_b",format_boolean_data_udf1(when ($"host_has_profile_pic".isNull,value=null).otherwise(value=$"host_has_profile_pic")))
+       .withColumn("host_identity_verified_b",format_boolean_data_udf1(when ($"host_identity_verified".isNull,value=null).otherwise(value=$"host_identity_verified")))
+       .withColumn("is_location_exact_b",format_boolean_data_udf1(when ($"is_location_exact".isNull,value=null).otherwise(value=$"is_location_exact")))
+       .withColumn("has_availability_b",format_boolean_data_udf1(when ($"has_availability".isNull,value=null).otherwise(value=$"has_availability")))
+       .withColumn("requires_license_b",format_boolean_data_udf1(when($"requires_license".isNull,value=null).otherwise(value=$"requires_license")))
+       .withColumn("instant_bookable_b",format_boolean_data_udf1(when ($"instant_bookable".isNull,value=null).otherwise(value=$"instant_bookable")))
+       .withColumn("is_business_travel_ready_b",format_boolean_data_udf1(when ($"is_business_travel_ready".isNull,value=null).otherwise(value=$"is_business_travel_ready")))
+       .withColumn("require_guest_profile_picture_b",format_boolean_data_udf1(when ($"require_guest_profile_picture".isNull,value=null).otherwise(value=$"require_guest_profile_picture")))
+       .withColumn("require_guest_phone_verification_b",format_boolean_data_udf1(when ($"require_guest_phone_verification".isNull,value=null).otherwise(value=$"require_guest_phone_verification")))
 
 /*
    :boolean columns
@@ -287,8 +300,8 @@ object Filter_columns {
         "host_listings_count_formatted",
         "host_total_listings_count_formatted",
         "host_verifications_formatted",
-        "host_has_profile_pic",
-        "host_identity_verified",
+        "host_has_profile_pic_b",
+        "host_identity_verified_b",
         "street",
         "neighbourhood",
         "neighbourhood_cleansed",
@@ -302,7 +315,7 @@ object Filter_columns {
         "country",
         "latitude_formatted",
         "longitude_formatted",
-        "is_location_exact",
+        "is_location_exact_b",
         "property_type",
         "room_type",
         "accommodates_formatted",
@@ -322,7 +335,7 @@ object Filter_columns {
         "minimum_nights_formatted",
         "maximum_nights_formatted",
         "calendar_updated",
-        "has_availability",
+        "has_availability_b",
         "availability_30_formatted",
         "availability_60_formatted",
         "availability_90_formatted",
@@ -338,14 +351,14 @@ object Filter_columns {
         "review_scores_communication_formatted",
         "review_scores_location_formatted",
         "review_scores_value_formatted",
-        "requires_license",
+        "requires_license_b",
         "license",
         "jurisdiction_names_formatted",
-        "instant_bookable",
-        "is_business_travel_ready",
+        "instant_bookable_b",
+        "is_business_travel_ready_b",
         "cancellation_policy",
-        "require_guest_profile_picture",
-        "require_guest_phone_verification",
+        "require_guest_profile_picture_b",
+        "require_guest_phone_verification_b",
         "calculated_host_listings_count_formatted",
         "reviews_per_month_formatted"
     )
@@ -393,8 +406,8 @@ object Filter_columns {
                                host_listings_count_formatted:Int,
                                host_total_listings_count_formatted:Int,
                                host_verifications_formatted:String,
-                               host_has_profile_pic:String,
-                               host_identity_verified:String,
+                               host_has_profile_pic_b:String,
+                               host_identity_verified_b:String,
                                street:String,
                                neighbourhood:String,
                                neighbourhood_cleansed:String,
@@ -408,7 +421,7 @@ object Filter_columns {
                                country:String,
                                latitude_formatted:Double,
                                longitude_formatted:Double,
-                               is_location_exact:String,
+                               is_location_exact_b:String,
                                property_type:String,
                                room_type:String,
                                accommodates_formatted:Int,
@@ -428,7 +441,7 @@ object Filter_columns {
                                minimum_nights_formatted:Int,
                                maximum_nights_formatted:Int,
                                calendar_updated:String,
-                               has_availability:String,
+                               has_availability_b:String,
                                availability_30_formatted:Int,
                                availability_60_formatted:Int,
                                availability_90_formatted:Int,
@@ -444,13 +457,13 @@ object Filter_columns {
                                review_scores_communication_formatted:Int,
                                review_scores_location_formatted:Int,
                                review_scores_value_formatted:Int,
-                               requires_license:String,
+                               requires_license_b:String,
                                license:String,
                                jurisdiction_names_formatted:String,
-                               instant_bookable:String,
-                               is_business_travel_ready:String,
+                               instant_bookable_b:String,
+                               is_business_travel_ready_b:String,
                                cancellation_policy:String,
-                               require_guest_profile_picture:String,
+                               require_guest_profile_picture_b:String,
                                require_guest_phone_verification:String,
                                calculated_host_listings_count_formatted:Int,
                                reviews_per_month_formatted:Double)
