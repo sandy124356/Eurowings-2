@@ -3,7 +3,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark
 import org.apache.spark.sql.SparkSession
 import org.apache.spark._
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.functions.column
 import org.apache.spark.sql.functions._
@@ -19,7 +18,7 @@ object Filter_columns {
 
   def format_currency_data(input: String): Double = {
     if(input.trim().isEmpty ){
-      return 0.00
+      return 0.00.toDouble
     }else{
       input.trim.replaceAll("[ $,{,% ]", "").toDouble
     }
@@ -27,18 +26,45 @@ object Filter_columns {
 
   def format_numeric_data(input: String): Int = {
     if(input.trim().isEmpty ){
-      return 0
+      return 0.toInt
     }else{
       input.trim.replaceAll("[ $,{,% ]", "").toInt
     }
   }
 
+  def format_boolean_data(input: String): Char = {
+    if(input.trim().isEmpty ){
+      return ' '
+    }else{
+      input.trim.charAt(0)
+    }
+  }
 
+
+  def format_amenities(input: String): String = {
+    if(input.isEmpty ){
+      return null
+    }else{
+      input.replace("{", "").replace("}", "").replace("\"", "").replace("translation missing: en.hosting_amenity_49","").replace("translation missing: en.hosting_amenity_50","")
+    }
+  }
+
+  def format_verifications(input: String): String = {
+    if(input.isEmpty ){
+      return null
+    }else{
+      input.replace("[","").replace("]","").replace("'","")
+    }
+  }
 
   //def format_decimal_data1: String => Int = _.toInt
 //  def format_decimal_data_udf1 = udf(format_decimal_data1)
   val format_currency_data_udf1 = udf((input : String) => format_currency_data(input))
   val format_numeric_data_udf1 = udf((input : String) => format_numeric_data(input))
+ // val format_boolean_data_udf1 = udf((input : String) => format_boolean_data(input))
+  val format_amenities_data_udf1=udf((input:String)=> format_amenities(input))
+  val format_host_verifications_data_udf1=udf((input:String)=>format_verifications(input))
+
 /*
   def format_currency_data2 (S: String) :Double ={
     try {
@@ -114,7 +140,7 @@ object Filter_columns {
 
     val formatted_df2=original_df
      // .withColumn("price_formatted", format_currency_data_udf1( $"price"))
-
+//currency
       .withColumn("price_formatted", format_currency_data_udf1(when ($"price".isNull,0.00).otherwise($"price")))
 
       .withColumn("weekly_price_formatted",format_currency_data_udf1(when ($"weekly_price".isNull,0.00).otherwise($"weekly_price")))
@@ -126,7 +152,7 @@ object Filter_columns {
       .withColumn("reviews_per_month_formatted",format_currency_data_udf1(when ($"reviews_per_month".isNull,0.00).otherwise($"reviews_per_month")))
 
 
-      .withColumn("id_formatted",format_numeric_data_udf1(when ($"id".isNull,0).otherwise($"id")))
+      .withColumn("id_formatted",format_numeric_data_udf1(when ($"id".isNull,0.toInt).otherwise($"id")))
       .withColumn("host_id_formatted",format_numeric_data_udf1(when ($"host_id".isNull,0).otherwise($"host_id")))
       .withColumn("host_response_rate_formatted",format_numeric_data_udf1(when ($"host_response_rate".isNull,0).otherwise($"host_response_rate")))
       .withColumn("host_acceptance_rate_formatted",format_numeric_data_udf1(when ($"host_acceptance_rate".isNull,0).otherwise($"host_acceptance_rate")))
@@ -134,7 +160,7 @@ object Filter_columns {
       .withColumn("host_total_listings_count_formatted",format_numeric_data_udf1(when ($"host_total_listings_count".isNull,0).otherwise($"host_total_listings_count")))
       .withColumn("accommodates_formatted",format_numeric_data_udf1(when ($"accommodates".isNull,0).otherwise($"accommodates")))
 
-
+//numeric
       .withColumn("bedrooms_formatted",format_numeric_data_udf1(when ($"bedrooms".isNull,0).otherwise($"bedrooms")))
       .withColumn("beds_formatted",format_numeric_data_udf1(when ($"beds".isNull,0).otherwise($"beds")))
       .withColumn("square_feet_formatted",format_numeric_data_udf1(when ($"square_feet".isNull,0).otherwise($"square_feet")))
@@ -155,18 +181,31 @@ object Filter_columns {
       .withColumn("review_scores_value_formatted",format_numeric_data_udf1(when ($"review_scores_value".isNull,0).otherwise($"review_scores_value")))
       .withColumn("calculated_host_listings_count_formatted",format_numeric_data_udf1(when ($"calculated_host_listings_count".isNull,0).otherwise($"calculated_host_listings_count")))
 
-
+//decimal/float
  .withColumn("latitude_formatted",$"latitude".cast("Double"))
  .withColumn("longitude_formatted",$"longitude".cast("Double"))
 
-
+//date_types
     .withColumn("last_scraped_date",to_date(unix_timestamp(col("last_scraped"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("host_since_date",to_date(unix_timestamp(col("host_since"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("calendar_last_scraped_date",to_date(unix_timestamp(col("calendar_last_scraped"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
 
+        .withColumn("amenities_formatted",format_amenities_data_udf1($"amenities") )
+        .withColumn("host_verifications_formatted", format_host_verifications_data_udf1($"host_verifications"))
+        .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1($"jurisdiction_names"))
 
+     //booleantypes
+     // .withColumn("host_has_profile_pic_b",format_boolean_data_udf1($"host_has_profile_pic"))
+     // .withColumn("host_identity_verified_b",format_boolean_data_udf1($"host_identity_verified"))
+      //.withColumn("is_location_exact_b",format_boolean_data_udf1($"is_location_exact"))
+      //.withColumn("has_availability_b",format_boolean_data_udf1($"has_availability"))
+      //.withColumn("requires_license_b",format_boolean_data_udf1($"requires_license"))
+      //.withColumn("instant_bookable_b",format_boolean_data_udf1($"instant_bookable"))
+      //.withColumn("is_business_travel_ready_b",format_boolean_data_udf1($"is_business_travel_ready"))
+      //.withColumn("require_guest_profile_picture_b",format_boolean_data_udf1($"require_guest_profile_picture"))
+      //.withColumn("require_guest_phone_verification_b",format_boolean_data_udf1($"require_guest_phone_verification"))
 
 /*
    :boolean columns
@@ -247,7 +286,7 @@ object Filter_columns {
         "host_neighbourhood",
         "host_listings_count_formatted",
         "host_total_listings_count_formatted",
-        "host_verifications",
+        "host_verifications_formatted",
         "host_has_profile_pic",
         "host_identity_verified",
         "street",
@@ -269,9 +308,9 @@ object Filter_columns {
         "accommodates_formatted",
         "bathrooms_formatted",
         "bedrooms_formatted",
-        "beds",
+        "beds_formatted",
         "bed_type",
-        "amenities",
+        "amenities_formatted",
         "square_feet_formatted",
         "price_formatted",
         "weekly_price_formatted",
@@ -301,7 +340,7 @@ object Filter_columns {
         "review_scores_value_formatted",
         "requires_license",
         "license",
-        "jurisdiction_names",
+        "jurisdiction_names_formatted",
         "instant_bookable",
         "is_business_travel_ready",
         "cancellation_policy",
@@ -353,7 +392,7 @@ object Filter_columns {
                                host_neighbourhood:String,
                                host_listings_count_formatted:Int,
                                host_total_listings_count_formatted:Int,
-                               host_verifications:String,
+                               host_verifications_formatted:String,
                                host_has_profile_pic:String,
                                host_identity_verified:String,
                                street:String,
@@ -375,9 +414,9 @@ object Filter_columns {
                                accommodates_formatted:Int,
                                bathrooms_formatted:Double,
                                bedrooms_formatted:Int,
-                               beds:Int,
+                               beds_formatted:Int,
                                bed_type:String,
-                               amenities:String,
+                               amenities_formatted:String,
                                square_feet_formatted:Int,
                                price_formatted:Double,
                                weekly_price_formatted:Double,
@@ -407,7 +446,7 @@ object Filter_columns {
                                review_scores_value_formatted:Int,
                                requires_license:String,
                                license:String,
-                               jurisdiction_names:String,
+                               jurisdiction_names_formatted:String,
                                instant_bookable:String,
                                is_business_travel_ready:String,
                                cancellation_policy:String,
@@ -418,16 +457,22 @@ object Filter_columns {
 
     println("num of columns are :",final_df.columns.size)
 
-    //val final_dataset =final_df.as[airbnb_data]
+
+  final_df.printSchema()
+
+
+   // val final_dataset =final_df.as[airbnb_data]
 
     //final_dataset.select("host_acceptance_rate_formatted").show(100)
 
+
+
+  //df.withColumn("x4New", regexp_replace(df("x4"), "\\,", ".")).show
+
+
+    //final_df.select("amenities_formatted", "host_verfications").show(10, false)
+    final_df.show(10)
     spark.stop()
   }
 }
 
-
-// columns with $ : price	,weekly_price,	monthly_price,	security_deposit,	cleaning_fee, extra_people
-
-
-//columns as list : host_verifications, amenities, jurisdiction_names
