@@ -1,21 +1,14 @@
 package com.eurowings.airbnb_usecase
-import org.apache.spark.SparkContext
-import org.apache.spark
 import org.apache.spark.sql.SparkSession
-import org.apache.spark._
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.functions.column
 import org.apache.spark.sql.functions._
 import java.sql.Date
 object Filter_columns {
 
-  //def format_currency_data1: String => Double = _.trim.replaceAll("[ $,{,% ]", "").toDouble
-  //def format_currency_data_udf1 = udf(format_currency_data1)
 
-  //def format_numeric_data1: String => Int = _.trim.replaceAll("[ $,{,% ]", "").toInt
-  //def format_numeric_data_udf1 = udf(format_numeric_data1)
+  //Functions used to format data coming from Excel for easy type conversions while working with dataframes and datasets
 
-
+  //  format_currency_data can be used by columns referring currencies/pricing
   def format_currency_data(input: String): Double = {
     if(input.trim().isEmpty ){
       return 0.00.toDouble
@@ -24,6 +17,7 @@ object Filter_columns {
     }
   }
 
+  // format_numeric_data can be used by columns whose values should be Integers
   def format_numeric_data(input: String): Int = {
     if(input.trim().isEmpty ){
       return 0.toInt
@@ -31,34 +25,7 @@ object Filter_columns {
       input.trim.replaceAll("[ $,{,% ]", "").toInt
     }
   }
-
-  def format_boolean_data_original(input: String): Char = {
-    if(input.trim().isEmpty ){
-      return ' '
-    }else{
-      input.trim.charAt(0)
-    }
-  }
-
-
-  def format_amenities(input: String): String = {
-    if(input.isEmpty ){
-      return null
-    }else{
-      input.replace("{", "").replace("}", "").replace("\"", "").replace("translation missing: en.hosting_amenity_49","").replace("translation missing: en.hosting_amenity_50","")
-    }
-  }
-
-  def format_host_verifications(input: String): String = {
-    if(input.isEmpty ){
-      return null
-    }else{
-      //input.replace("[","").replace("]","").replace("'","")
-      input.replaceAll("[\\[\\]\\']","")
-    }
-  }
-
-
+  //format_boolean_data_original can be used by columns whose values can be either true or false. lets consider them as boolean type for next processes.
   def format_boolean_data(input: String): Boolean = {
     if (input != null)
     {
@@ -71,6 +38,29 @@ object Filter_columns {
       return false
   }
 
+
+  // format_amenities will be used by amenities column in the file, this takes input String and make it a comma(,) seperated String
+  def format_amenities(input: String): String = {
+    if(input.isEmpty ){
+      return null
+    }else{
+      input.replace("{", "").replace("}", "").replace("\"", "").replace("translation missing: en.hosting_amenity_49","").replace("translation missing: en.hosting_amenity_50","")
+    }
+  }
+
+  // format_host_verifications used by host_verifications column in the file. open/close brackets will be removed to make it comma seperated
+    def format_host_verifications(input: String): String = {
+    if(input.isEmpty ){
+      return null
+    }else{
+      //input.replace("[","").replace("]","").replace("'","")
+      input.replaceAll("[\\[\\]\\']","")
+    }
+  }
+
+
+ //Below functions will be used to register the scala functions into spark udfs, so that they can be used directly in spark-sql.
+
   //def format_decimal_data1: String => Int = _.toInt
 //  def format_decimal_data_udf1 = udf(format_decimal_data1)
   val format_currency_data_udf1 = udf((input : String) => format_currency_data(input))
@@ -79,66 +69,33 @@ object Filter_columns {
   val format_amenities_data_udf1=udf((input:String)=> format_amenities(input))
   val format_host_verifications_data_udf1=udf((input:String)=>format_host_verifications(input))
 
-/*
-  def format_currency_data2 (S: String) :Double ={
-    try {
-      println("in here")
-      var formatted:Double=0
-      println(formatted)
-      formatted=S.replaceAll("[$,{,]", "").trim.toDouble
-      return formatted
-    } catch {
-      case e: Exception => println("Exception while converting currency values from input file")
-        e.printStackTrace
-        e.getMessage
-      return 0.0
-    }
-
-  }
-
-  def format_currency_data_udf2 = udf(format_currency_data2)
-
-  */
   def main(args: Array[String]): Unit ={
 
     val spark= new SparkSession
                   .Builder()
-                  .master("local[*]")
+                  .master("local[*]")     // using master as local to test in my machine for now, this can be the url of YARN cluster in production
                   .appName("Eurowings_dataEngine")
-                  .enableHiveSupport()
+                  .enableHiveSupport()            // enabling hive support to store the formatted dataframe into Hive tables.
                   .getOrCreate()
 
     import spark.implicits._
     import java.sql.Date
-
+    //total 96 columns in the input file.
     val original_df= spark.read
       .option("wholeFile", true)
-      .option("multiLine", "true")
+      .option("multiLine", "true")              // Since some of the reviews columns are having /n characters and in order spark should escape them, multiLine=true
       .option("delimiter",",")
       .option("header","true")
       .option("escape", "\"")
-      .csv("C:\\Users\\u6062310\\Desktop\\eurowings\\listings_2018-01-01.csv")
+      .csv("C:\\Users\\u6062310\\Desktop\\eurowings\\listings_2018-01-01.csv")  //The file name can be sent as an argument to main during scheduled runs using spark submit.
 
-    original_df.printSchema()
+    original_df.printSchema()   //checking if spark read the file correctly with all headers
 
     original_df.take(1).foreach(print)
 
-    original_df.select("id").show(100)
+    original_df.select("id").show(100)  //checking if spark read the first column correctly
 
-    original_df.select("price").show(100)
-
-    // original_df.withColumn("real_price",$"price")
-
-
-    /*
-
-    */
-    val format_array=Array("price",
-      "weekly_price",
-      "monthly_price",
-      "security_deposit",
-      "cleaning_fee",
-      "extra_people")
+    original_df.select("price").show(100)  //checking if spark read the Price column correctly
 
     //original_df.withColumn("new_price",format_data_udf($"price")).select("new_price").show(100)
 /*
@@ -152,16 +109,12 @@ object Filter_columns {
                                                 }})
 
 */
-    //print(formatted_df.getClass())
+    println("now back after schema")
 
-    //formatted_df.foreach(print)
-      println("now back after schema")
-
+    //Original_df formed above will be formatted for all the necessary important columns using withColumn option
     val formatted_df2=original_df
-     // .withColumn("price_formatted", format_currency_data_udf1( $"price"))
-//currency
+      //Identified price columns and Formatting them using udf.
       .withColumn("price_formatted", format_currency_data_udf1(when ($"price".isNull,0.00).otherwise($"price")))
-
       .withColumn("weekly_price_formatted",format_currency_data_udf1(when ($"weekly_price".isNull,0.00).otherwise($"weekly_price")))
       .withColumn("monthly_price_formatted",format_currency_data_udf1(when ($"monthly_price".isNull,0.00).otherwise($"monthly_price")))
       .withColumn("security_deposit_formatted",format_currency_data_udf1(when ($"security_deposit".isNull,0.00).otherwise($"security_deposit")))
@@ -170,7 +123,7 @@ object Filter_columns {
       .withColumn("bathrooms_formatted",format_currency_data_udf1(when ($"bathrooms".isNull,0.00).otherwise($"bathrooms")))
       .withColumn("reviews_per_month_formatted",format_currency_data_udf1(when ($"reviews_per_month".isNull,0.00).otherwise($"reviews_per_month")))
 
-
+      //Identified Numeric columns and Formatting them using udf.
       .withColumn("id_formatted",format_numeric_data_udf1(when ($"id".isNull,0.toInt).otherwise($"id")))
       .withColumn("host_id_formatted",format_numeric_data_udf1(when ($"host_id".isNull,0).otherwise($"host_id")))
       .withColumn("host_response_rate_formatted",format_numeric_data_udf1(when ($"host_response_rate".isNull,0).otherwise($"host_response_rate")))
@@ -178,8 +131,6 @@ object Filter_columns {
       .withColumn("host_listings_count_formatted",format_numeric_data_udf1(when ($"host_listings_count".isNull,0).otherwise($"host_listings_count")))
       .withColumn("host_total_listings_count_formatted",format_numeric_data_udf1(when ($"host_total_listings_count".isNull,0).otherwise($"host_total_listings_count")))
       .withColumn("accommodates_formatted",format_numeric_data_udf1(when ($"accommodates".isNull,0).otherwise($"accommodates")))
-
-//numeric
       .withColumn("bedrooms_formatted",format_numeric_data_udf1(when ($"bedrooms".isNull,0).otherwise($"bedrooms")))
       .withColumn("beds_formatted",format_numeric_data_udf1(when ($"beds".isNull,0).otherwise($"beds")))
       .withColumn("square_feet_formatted",format_numeric_data_udf1(when ($"square_feet".isNull,0).otherwise($"square_feet")))
@@ -200,77 +151,40 @@ object Filter_columns {
       .withColumn("review_scores_value_formatted",format_numeric_data_udf1(when ($"review_scores_value".isNull,0).otherwise($"review_scores_value")))
       .withColumn("calculated_host_listings_count_formatted",format_numeric_data_udf1(when ($"calculated_host_listings_count".isNull,0).otherwise($"calculated_host_listings_count")))
 
-//decimal/float
- .withColumn("latitude_formatted",$"latitude".cast("Double"))
- .withColumn("longitude_formatted",$"longitude".cast("Double"))
+      //convert latittude, longitude from string to decimal
+      .withColumn("latitude_formatted",$"latitude".cast("Double"))
+      .withColumn("longitude_formatted",$"longitude".cast("Double"))
 
-//date_types
-    .withColumn("last_scraped_date",to_date(unix_timestamp(col("last_scraped"),"MM/dd/yyyy").cast("timestamp")))
+      //Identified date columns and format them accordingly to unix_timestamp.
+      .withColumn("last_scraped_date",to_date(unix_timestamp(col("last_scraped"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("host_since_date",to_date(unix_timestamp(col("host_since"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("calendar_last_scraped_date",to_date(unix_timestamp(col("calendar_last_scraped"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
-//list types
-        .withColumn("amenities_formatted",format_amenities_data_udf1(when($"amenities".isNull,"").otherwise($"amenities") ))
-        .withColumn("host_verifications_formatted", format_host_verifications_data_udf1(when($"host_verifications".isNull,"").otherwise($"host_verifications")))
-        .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1(when ($"jurisdiction_names".isNull,"").otherwise($"jurisdiction_names")))
 
-     //booleantypes
-       .withColumn("host_has_profile_pic_b",format_boolean_data_udf1(when ($"host_has_profile_pic".isNull,null).otherwise(value=$"host_has_profile_pic")))
-       .withColumn("host_identity_verified_b",format_boolean_data_udf1(when ($"host_identity_verified".isNull,value=null).otherwise(value=$"host_identity_verified")))
-       .withColumn("is_location_exact_b",format_boolean_data_udf1(when ($"is_location_exact".isNull,value=null).otherwise(value=$"is_location_exact")))
-       .withColumn("has_availability_b",format_boolean_data_udf1(when ($"has_availability".isNull,value=null).otherwise(value=$"has_availability")))
-       .withColumn("requires_license_b",format_boolean_data_udf1(when($"requires_license".isNull,value=null).otherwise(value=$"requires_license")))
-       .withColumn("instant_bookable_b",format_boolean_data_udf1(when ($"instant_bookable".isNull,value=null).otherwise(value=$"instant_bookable")))
-       .withColumn("is_business_travel_ready_b",format_boolean_data_udf1(when ($"is_business_travel_ready".isNull,value=null).otherwise(value=$"is_business_travel_ready")))
-       .withColumn("require_guest_profile_picture_b",format_boolean_data_udf1(when ($"require_guest_profile_picture".isNull,value=null).otherwise(value=$"require_guest_profile_picture")))
-       .withColumn("require_guest_phone_verification_b",format_boolean_data_udf1(when ($"require_guest_phone_verification".isNull,value=null).otherwise(value=$"require_guest_phone_verification")))
+      //amenities, host_verifications are in bad format so bringing them to comma seperated list
+      .withColumn("amenities_formatted",format_amenities_data_udf1(when($"amenities".isNull,"").otherwise($"amenities") ))
+      .withColumn("host_verifications_formatted", format_host_verifications_data_udf1(when($"host_verifications".isNull,"").otherwise($"host_verifications")))
+      .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1(when ($"jurisdiction_names".isNull,"").otherwise($"jurisdiction_names")))
 
-/*
-   :boolean columns
-    host_has_profile_pic
-    host_identity_verified
-    is_location_exact
-    has_availability
-    requires_license
-    instant_bookable
-    is_business_travel_ready
-    require_guest_profile_picture
-    require_guest_phone_verification
-*/
+      // Identified some boolean columns which have either 't' or 'f'. formatting them to cast as boolean type.
+      .withColumn("host_has_profile_pic_b",format_boolean_data_udf1(when ($"host_has_profile_pic".isNull,null).otherwise(value=$"host_has_profile_pic")))
+      .withColumn("host_identity_verified_b",format_boolean_data_udf1(when ($"host_identity_verified".isNull,value=null).otherwise(value=$"host_identity_verified")))
+      .withColumn("is_location_exact_b",format_boolean_data_udf1(when ($"is_location_exact".isNull,value=null).otherwise(value=$"is_location_exact")))
+      .withColumn("has_availability_b",format_boolean_data_udf1(when ($"has_availability".isNull,value=null).otherwise(value=$"has_availability")))
+      .withColumn("requires_license_b",format_boolean_data_udf1(when($"requires_license".isNull,value=null).otherwise(value=$"requires_license")))
+      .withColumn("instant_bookable_b",format_boolean_data_udf1(when ($"instant_bookable".isNull,value=null).otherwise(value=$"instant_bookable")))
+      .withColumn("is_business_travel_ready_b",format_boolean_data_udf1(when ($"is_business_travel_ready".isNull,value=null).otherwise(value=$"is_business_travel_ready")))
+      .withColumn("require_guest_profile_picture_b",format_boolean_data_udf1(when ($"require_guest_profile_picture".isNull,value=null).otherwise(value=$"require_guest_profile_picture")))
+      .withColumn("require_guest_phone_verification_b",format_boolean_data_udf1(when ($"require_guest_phone_verification".isNull,value=null).otherwise(value=$"require_guest_phone_verification")))
 
-
-    /*
-  date fields:
-
-  last_scraped
-  host_since
-  calendar_last_scraped
-  first_review
-  last_review
-
-  */
-
-
-    //formatted_df2.select($"price_formatted").show(100)
-
-    //formatted_df2.groupBy("price_formatted").sum("price_formatted").show(100)
-
-
-
-
-    //original_df.withColumn("latest_curr",format_currency_data_udf1($"monthly_price")).select("latest_curr").show(100)
 
     println("now back after schema step2")
 
-    //formatted_df2.show(100)
+    formatted_df2.printSchema()
 
-    println("now back after schema step3")
-    //original_df.schema.fieldNames.foreach(println)
-    //original_df.schema.foreach(println)
-    //formatted_df2.show(10)
-
-    val AllcolumnNameSeq =
+    // With all the newly formatted column names forming a List, so that only those will be used to form  a final dataframe.
+      val AllcolumnNameSeq =
       Seq("id_formatted",
         "listing_url",
         "scrape_id",
@@ -375,7 +289,7 @@ object Filter_columns {
 
     final_df.select("id_formatted").show(100)
 
-  // case class sss(a:Double)
+  // creating a case class with primitive types  to convert above dataframe to dataset for better compile time safety.
 
     case class airbnb_data(		id_formatted:Int,
                                listing_url:String,
@@ -474,32 +388,32 @@ object Filter_columns {
                                calculated_host_listings_count_formatted:Int,
                                reviews_per_month_formatted:Double)
 
-    println("num of columns are :",final_df.columns.size)
+    println("num of columns are :",final_df.columns.size) //check if the count matches with the actual dataframe size.
+
+    val original_df_size=original_df.columns.size
+    val final_df_size=final_df.columns.size
+
+    if (original_df_size==final_df_size)
+      println("--------->total columms count match after format")
+    else
+      println("--------->columms missing after format")
 
 
   final_df.printSchema()
 
-
-   // val final_dataset =final_df.as[airbnb_data]
+    //val final_ds=final_df.as[airbnb_data]
+    // val final_dataset =final_df.as[airbnb_data]
 
     //final_dataset.select("host_acceptance_rate_formatted").show(100)
 
 
-
-  //df.withColumn("x4New", regexp_replace(df("x4"), "\\,", ".")).show
-
-
-    //final_df.select("amenities_formatted", "host_verfications").show(10, false)
-      //val final_df2=final_df.take(100)
-
-    //final_df.select("host_has_profile_pic_b").show(100000)
-
+    // Created a staging table in Hive (airbnb_database) which is a truncate and load table on everyday/file arriving pattern basis.
 
     spark.sql("DROP TABLE IF EXISTS airbnb_database.airbnb_staging_table")
 
     final_df.write.mode(saveMode="OverWrite").saveAsTable("airbnb_database.airbnb_staging_table")
 
-    //final_df.show(10)
+
     spark.stop()
   }
 }
