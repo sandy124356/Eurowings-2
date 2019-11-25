@@ -60,14 +60,15 @@ object Filter_columns {
 
 
   def format_boolean_data(input: String): Boolean = {
-
+    if (input != null)
+    {
       if (input.trim().toLowerCase() == "t")
-          return true
-      else if  (input.trim().toLowerCase() == "f")
-          return false
-      else
-        return false
-
+        return true
+      else (input.trim().toLowerCase() == "f")
+      return false
+    }
+    else
+      return false
   }
 
   //def format_decimal_data1: String => Int = _.toInt
@@ -100,7 +101,12 @@ object Filter_columns {
   */
   def main(args: Array[String]): Unit ={
 
-    val spark= new SparkSession.Builder().master("local[*]").appName("Eurowings_dataEngine")getOrCreate()
+    val spark= new SparkSession
+                  .Builder()
+                  .master("local[*]")
+                  .appName("Eurowings_dataEngine")
+                  .enableHiveSupport()
+                  .getOrCreate()
 
     import spark.implicits._
     import java.sql.Date
@@ -205,12 +211,12 @@ object Filter_columns {
       .withColumn("first_review_date",to_date(unix_timestamp(col("first_review"),"MM/dd/yyyy").cast("timestamp")))
       .withColumn("last_review_date",to_date(unix_timestamp(col("last_review"),"MM/dd/yyyy").cast("timestamp")))
 //list types
-        .withColumn("amenities_formatted",format_amenities_data_udf1($"amenities") )
-        .withColumn("host_verifications_formatted", format_host_verifications_data_udf1($"host_verifications"))
-        .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1($"jurisdiction_names"))
+        .withColumn("amenities_formatted",format_amenities_data_udf1(when($"amenities".isNull,"").otherwise($"amenities") ))
+        .withColumn("host_verifications_formatted", format_host_verifications_data_udf1(when($"host_verifications".isNull,"").otherwise($"host_verifications")))
+        .withColumn("jurisdiction_names_formatted", format_amenities_data_udf1(when ($"jurisdiction_names".isNull,"").otherwise($"jurisdiction_names")))
 
      //booleantypes
-       .withColumn("host_has_profile_pic_b",format_boolean_data_udf1(when ($"host_has_profile_pic".isNull,value=null).otherwise(value=$"host_has_profile_pic")))
+       .withColumn("host_has_profile_pic_b",format_boolean_data_udf1(when ($"host_has_profile_pic".isNull,null).otherwise(value=$"host_has_profile_pic")))
        .withColumn("host_identity_verified_b",format_boolean_data_udf1(when ($"host_identity_verified".isNull,value=null).otherwise(value=$"host_identity_verified")))
        .withColumn("is_location_exact_b",format_boolean_data_udf1(when ($"is_location_exact".isNull,value=null).otherwise(value=$"is_location_exact")))
        .withColumn("has_availability_b",format_boolean_data_udf1(when ($"has_availability".isNull,value=null).otherwise(value=$"has_availability")))
@@ -484,7 +490,16 @@ object Filter_columns {
 
 
     //final_df.select("amenities_formatted", "host_verfications").show(10, false)
-    final_df.show(10)
+      //val final_df2=final_df.take(100)
+
+    //final_df.select("host_has_profile_pic_b").show(100000)
+
+
+    spark.sql("DROP TABLE IF EXISTS airbnb_database.airbnb_staging_table")
+
+    final_df.write.mode(saveMode="OverWrite").saveAsTable("airbnb_database.airbnb_staging_table")
+
+    //final_df.show(10)
     spark.stop()
   }
 }
