@@ -1,3 +1,7 @@
+//Developed in spark 2.4.3
+//Hive 2.1
+//sbt 1.3 for build
+
 package com.eurowings.airbnb_usecase
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.udf
