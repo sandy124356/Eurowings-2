@@ -91,7 +91,7 @@ object Filter_columns {
       .option("delimiter",",")
       .option("header","true")
       .option("escape", "\"")
-      .csv("C:\\Users\\u6062310\\Desktop\\eurowings\\listings_2018-01-01.csv")  //The file name can be sent as an argument to main during scheduled runs using spark submit.
+      .csv("hdfs://localhost:9000/eurowings/ETL/listings_2018-01-01.csv")  //Reading file from HDFS. The file name can be sent as an argument to main during scheduled runs using spark submit.
 
     original_df.printSchema()   //checking if spark read the file correctly with all headers
 
