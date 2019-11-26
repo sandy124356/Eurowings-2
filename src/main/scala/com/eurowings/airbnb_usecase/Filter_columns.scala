@@ -289,6 +289,8 @@ object Filter_columns {
     //val final_df=formatted_df2.select(col("abc"))
     val final_df=formatted_df2.select(AllcolumnNameSeq.map(x=>col(x)):_* )
 
+    final_df.cache() //caching this resultant dataframe as my next transformations/actions extensively use this.
+
     final_df.show(100)
 
     final_df.select("id_formatted").show(100)
@@ -403,6 +405,7 @@ object Filter_columns {
       println("--------->columms missing after format")
 
 
+
   final_df.printSchema()
 
     //val final_ds=final_df.as[airbnb_data]
@@ -411,12 +414,23 @@ object Filter_columns {
     //final_dataset.select("host_acceptance_rate_formatted").show(100)
 
 
-    // Created a staging table in Hive (airbnb_database) which is a truncate and load table on everyday/file arriving pattern basis.
+    // Creating a staging table in Hive (airbnb_database) which is a truncate and load on everyday/file arriving pattern basis.
 
     spark.sql("DROP TABLE IF EXISTS airbnb_database.airbnb_staging_table")
 
     final_df.write.mode(saveMode="OverWrite").saveAsTable("airbnb_database.airbnb_staging_table")
 
+    //as amenities is a string of comma seperated values, need to explode this with comma seperated
+    val amenities_df=final_df.select($"id_formatted".as("host_id"), $"name".as("host_name"), explode(split($"amenities_formatted", ",")).as("individual_amenities"))
+
+    //use a seperate hive table to load this exploded details so that it can be joined with base table and grouped by host_id to get the amenities count individually.
+    spark.sql("DROP TABLE IF EXISTS airbnb_database.amenities_staging")
+
+    println("-------------------------------->"+amenities_df.getClass)
+
+    amenities_df.write.mode(saveMode = "OverWrite").saveAsTable("airbnb_database.airbnb_amenities_mapping_table")
+
+    spark.sql("select * from airbnb_database.airbnb_amenities_mapping_table")
 
     spark.stop()
   }
